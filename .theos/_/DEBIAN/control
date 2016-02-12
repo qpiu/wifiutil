@@ -1,0 +1,11 @@
+Package: wifiutil
+Name: wifiutil
+Depends: 
+Architecture: iphoneos-arm
+Description: An awesome tool of some sort!!
+Maintainer: lerlerblur
+Author: lerlerblur
+Section: System
+Tag: role::hacker
+Version: 0.0.1-26
+Installed-Size: 164
