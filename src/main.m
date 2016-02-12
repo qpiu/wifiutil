@@ -11,26 +11,8 @@
 #import <MobileWiFi/MobileWiFi.h>
 #import "UtilNetwork.h"
 #import "UtilNetworksManager.h"
+#import "Constants.h"
 #include <String.h>
-
-// Colors
-// Normal   "\x1B[0m"
-// Red      "\x1B[31m"
-// Green    "\x1B[32m"
-// Yellow   "\x1B[33m"
-// Blue     "\x1B[34m"
-// CYAN     "\x1B[36m"
-// White    "\x1B[37m"
-
-#define LOG_DBG(x) \
-        NSLog(@"\x1B[32m[Debug]  \x1B[0m%@", x);
-#define LOG_ERR(x) \
-        NSLog(@"\x1B[31m[Error]  \x1B[0m%@", x);
-#define LOG_OUTPUT(x) \
-        NSLog(@"\x1B[36m[Output]  \x1B[0m%@", x);
-
-#define EQUAL(x, c) strncmp(x, c, strlen(c))
-
 
 static WiFiManagerRef _manager;
 static void scan_callback(WiFiDeviceClientRef device, CFArrayRef results, CFErrorRef error, void *token);
@@ -58,8 +40,8 @@ int main(int argc, char **argv, char **envp) {
     
     if (EQUAL(usage, "scan") == 0)
     {
-        scan_networks();
-        //[[UtilNetworksManager sharedInstance] scan];
+        //scan_networks();
+        [[UtilNetworksManager sharedInstance] scan];
     }
     else if (EQUAL(usage, "associate") == 0) // associate to wifi
     {
@@ -90,9 +72,6 @@ static void scan_networks()
     
     WiFiManagerClientScheduleWithRunLoop(_manager, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
     WiFiDeviceClientScanAsync(client, (CFDictionaryRef)[NSDictionary dictionary], (WiFiDeviceScanCallback)scan_callback, 0);
-    
-    //NSMutableArray* networkList = [(NSArray*)results mutableCopy];
-    //LOG_DBG(networkList);
     
     CFRelease(devices);
     
