@@ -16,9 +16,12 @@
 - (void)_clearNetworks;
 - (void)_addNetwork:(UtilNetwork *)network;
 - (void)_reloadCurrentNetwork;
+- (void)_scanDidFinishWithError:(int)error;
+- (void)_associationDidFinishWithError:(int)error;
 - (WiFiNetworkRef)_currentNetwork;
 
 static void UtilScanCallback(WiFiDeviceClientRef device, CFArrayRef results, CFErrorRef error, void *token);
+static void UtilAssociationCallback(WiFiDeviceClientRef device, WiFiNetworkRef networkRef, CFDictionaryRef dict, CFErrorRef error, void *token);
 
 @end
 
@@ -87,6 +90,61 @@ static UtilNetworksManager *_sharedInstance = nil;
 	[self _scan];
 }
 
+- (void)associateWithNetwork:(UtilNetwork *)network
+{
+	// Prevent initiating an association if we're already associating.
+	if (_associating)
+		return;
+
+	if (_currentNetwork) {
+		// Prevent associating if we're already associated with that network.
+		if ([[network BSSID] isEqualToString:(NSString *)WiFiNetworkGetProperty(_currentNetwork, CFSTR("BSSID"))]) {
+			return;
+		} else {
+			// Disassociate with the current network before associating with a new one.
+			[self disassociate];
+		}
+	}
+
+	WiFiManagerClientScheduleWithRunLoop(_manager, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
+
+	WiFiNetworkRef net = [network _networkRef];
+
+	if (net) {
+		// XXX: Figure out how Apple sets the username.
+		if ([network password])
+			WiFiNetworkSetPassword(net, (CFStringRef)[network password]);
+
+		WiFiDeviceClientAssociateAsync(_client, net, (WiFiDeviceAssociateCallback)UtilAssociationCallback, NULL);
+		[network setIsAssociating:YES];
+		_associating = YES;
+	}
+}
+
+- (BOOL)isWiFiEnabled
+{
+	CFBooleanRef enabled = WiFiManagerClientCopyProperty(_manager, CFSTR("AllowEnable"));
+
+	BOOL value = CFBooleanGetValue(enabled);
+
+	CFRelease(enabled);
+
+	return value;
+}
+
+- (void)setWiFiEnabled:(BOOL)enabled
+{
+	// XXX: What.
+	CFBooleanRef value = (enabled ? kCFBooleanTrue : kCFBooleanFalse);
+
+	WiFiManagerClientSetProperty(_manager, CFSTR("AllowEnable"), value);
+}
+
+- (void)disassociate
+{
+	WiFiDeviceClientDisassociate(_client);
+}
+
 #pragma mark - Private APIs
 
 - (void)_scan
@@ -122,6 +180,27 @@ static UtilNetworksManager *_sharedInstance = nil;
 	_currentNetwork = WiFiDeviceClientCopyCurrentNetwork(_client);
 }
 
+- (void)_scanDidFinishWithError:(int)error
+{
+	WiFiManagerClientUnscheduleFromRunLoop(_manager);
+	_scanning = NO;
+}
+
+- (void)_associationDidFinishWithError:(int)error
+{
+	WiFiManagerClientUnscheduleFromRunLoop(_manager);
+
+	for (UtilNetwork *network in [[UtilNetworksManager sharedInstance] networks]) {
+		if ([network isAssociating])
+			[network setIsAssociating:NO];
+	}
+
+	_associating = NO;
+
+	// Reload the current network.
+	[self _reloadCurrentNetwork];
+}
+
 #pragma mark - Functions
 
 static void UtilScanCallback(WiFiDeviceClientRef device, CFArrayRef results, CFErrorRef error, void *token)
@@ -149,10 +228,10 @@ static void UtilScanCallback(WiFiDeviceClientRef device, CFArrayRef results, CFE
 
 		[network release];
 	}
-  
+  	[[UtilNetworksManager sharedInstance] _scanDidFinishWithError:(int)error];
 }
 
-/*static void UtilAssociationCallback(WiFiDeviceClientRef device, WiFiNetworkRef networkRef, CFDictionaryRef dict, int error, const void *token)
+static void UtilAssociationCallback(WiFiDeviceClientRef device, WiFiNetworkRef networkRef, CFDictionaryRef dict, CFErrorRef error, void *token)
 {
 	// Reload every network's data.
 	for (UtilNetwork *network in [[UtilNetworksManager sharedInstance] networks]) {
@@ -163,9 +242,9 @@ static void UtilScanCallback(WiFiDeviceClientRef device, CFArrayRef results, CFE
 		}
 	}
 
-	[[UtilNetworksManager sharedInstance] _associationDidFinishWithError:error];
+	[[UtilNetworksManager sharedInstance] _associationDidFinishWithError:(int)error];
 
-}*/
+}
 
 /*static void UtilReceivedNotification(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo)
 {

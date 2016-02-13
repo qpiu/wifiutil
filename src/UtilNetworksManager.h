@@ -27,8 +27,8 @@
 + (id)sharedInstance;
 - (void)scan;
 //- (void)removeNetwork:(WiFiNetworkRef)network;
-//- (void)associateWithNetwork:(UtilNetwork *)network;
-//- (void)disassociate;
+- (void)associateWithNetwork:(UtilNetwork *)network;
+- (void)disassociate;
 //- (NSArray *)knownNetworks;
 //- (NSString *)interfaceName;
 

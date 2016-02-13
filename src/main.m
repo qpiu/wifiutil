@@ -33,17 +33,17 @@ int main(int argc, char **argv, char **envp) {
         LOG_ERR(@"Specify arguments to use wifiutil.\n");
         return -1;
     }
-    
-    char *usage = argv[1];
-    str = [NSString stringWithFormat:@"wifiutil: %s\n", usage];
+
+    NSString *usage = [NSString stringWithUTF8String:argv[1]];
+    str = [NSString stringWithFormat:@"wifiutil: %@ \n", usage];
     LOG_DBG(str);
     
-    if (EQUAL(usage, "scan") == 0)
+    if ([usage isEqualToString:@"scan"])
     {
         //scan_networks();
         [[UtilNetworksManager sharedInstance] scan];
     }
-    else if (EQUAL(usage, "associate") == 0) // associate to wifi
+    else if ([usage isEqualToString:@"associate"]) // associate to wifi
     {
         if (argc < 3) {
             LOG_ERR(@"Specify ssid to use wifiutil to associate.\n");
@@ -51,7 +51,7 @@ int main(int argc, char **argv, char **envp) {
         }
         scan_networks();
     }
-    else if (EQUAL(usage, "disassociate") == 0) // disassociate to wifi
+    else if ([usage isEqualToString:@"disassociate"]) // disassociate to wifi
     {
         
     }
