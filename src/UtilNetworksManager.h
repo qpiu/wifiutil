@@ -29,6 +29,7 @@
 //- (void)removeNetwork:(WiFiNetworkRef)network;
 - (void)associateWithNetwork:(UtilNetwork *)network;
 - (void)disassociate;
+- (UtilNetwork *)getNetworkWithSSID:(NSString *)ssid;
 //- (NSArray *)knownNetworks;
 //- (NSString *)interfaceName;
 

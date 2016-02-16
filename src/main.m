@@ -9,14 +9,15 @@
 #import <stdio.h>
 #import <CoreFoundation/CoreFoundation.h>
 #import <MobileWiFi/MobileWiFi.h>
+#import <Foundation/NSTask.h>
 #import "UtilNetwork.h"
 #import "UtilNetworksManager.h"
 #import "Constants.h"
 #include <String.h>
 
-static WiFiManagerRef _manager;
-static void scan_callback(WiFiDeviceClientRef device, CFArrayRef results, CFErrorRef error, void *token);
-static void scan_networks();
+//static WiFiManagerRef _manager;
+//static void scan_callback(WiFiDeviceClientRef device, CFArrayRef results, CFErrorRef error, void *token);
+//static void scan_networks();
 
 int main(int argc, char **argv, char **envp) {
     // insert code here...
@@ -40,7 +41,6 @@ int main(int argc, char **argv, char **envp) {
     
     if ([usage isEqualToString:@"scan"])
     {
-        //scan_networks();
         [[UtilNetworksManager sharedInstance] scan];
     }
     else if ([usage isEqualToString:@"associate"]) // associate to wifi
@@ -49,16 +49,65 @@ int main(int argc, char **argv, char **envp) {
             LOG_ERR(@"Specify ssid to use wifiutil to associate.\n");
             return -1;
         }
-        scan_networks();
+        NSString *connect_SSID = [NSString stringWithUTF8String:argv[2]];
+        UtilNetworksManager *manager = [UtilNetworksManager sharedInstance];
+        [manager scan];
+        UtilNetwork *conn_Network = [manager getNetworkWithSSID: connect_SSID];
+        if(conn_Network)
+        {
+            str = [NSString stringWithFormat:@"Found network %@ :)", [conn_Network SSID]];
+            LOG_OUTPUT(str);
+            [manager associateWithNetwork: conn_Network];
+
+        }
+        else
+        {
+            str = [NSString stringWithFormat:@"Can not find network %@ :(", connect_SSID];
+            LOG_ERR(str);
+            return -1;
+        }
+
     }
     else if ([usage isEqualToString:@"disassociate"]) // disassociate to wifi
     {
-        
+        UtilNetworksManager *manager = [UtilNetworksManager sharedInstance];
+        [manager disassociate];
+    }
+    else if ([usage isEqualToString:@"ping"])
+    {
+        if (argc < 3) {
+            LOG_ERR(@"Specify IP to use wifiutil to ping.\n");
+            return -1;
+        }
+        NSString *ping_ip = [NSString stringWithUTF8String:argv[2]];
+
+        // execute ping
+        //int pid = [[NSProcessInfo processInfo] processIdentifier];
+        NSPipe *pipe = [NSPipe pipe];
+        NSFileHandle *file = pipe.fileHandleForReading;
+
+        NSTask *task = [[NSTask alloc] init];
+        task.launchPath = @"/usr/bin/ping";
+        task.arguments = @[@"-i", @"0.2", @"-c", @"50", ping_ip];
+        task.standardOutput = pipe;
+        [task launch];
+
+        NSData *data = [file readDataToEndOfFile];
+        [file closeFile];
+        NSString *output = [[NSString alloc] initWithData: data encoding: NSUTF8StringEncoding];
+        LOG_OUTPUT(output);
+        LOG_DBG(@"Ping Finished !");
+    }
+    else
+    {
+        str = [NSString stringWithFormat:@"Invalid argument: %@", usage];
+        LOG_ERR(str);
+        return -1;
     }
     return 0;
 }
 
-static void scan_networks()
+/*static void scan_networks()
 {
     _manager = WiFiManagerClientCreate(kCFAllocatorDefault, 0);
     
@@ -86,6 +135,6 @@ static void scan_callback(WiFiDeviceClientRef device, CFArrayRef results, CFErro
     CFRelease(_manager);
     
     CFRunLoopStop(CFRunLoopGetCurrent());
-}
+}*/
 
 // vim:ft=objc

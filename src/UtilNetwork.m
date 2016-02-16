@@ -57,31 +57,31 @@
     // SSID
     NSString *SSID = (NSString *)WiFiNetworkGetSSID(_network);
     [self setSSID:SSID];
-    NSString *dbg_str = [NSString stringWithFormat:@"setSSID: %@", SSID];
-    LOG_DBG(dbg_str);
+    //NSString *dbg_str = [NSString stringWithFormat:@"setSSID: %@", SSID];
+    //LOG_DBG(dbg_str);
 
     // Encryption model
     if (WiFiNetworkIsWEP(_network)) {
         [self setEncryptionModel:@"WEP"];
-        dbg_str = [NSString stringWithFormat:@"setEncryptionModel: %s", "WEP"];
-        LOG_DBG(dbg_str);
+        //dbg_str = [NSString stringWithFormat:@"setEncryptionModel: %s", "WEP"];
+        //LOG_DBG(dbg_str);
     }
     else if (WiFiNetworkIsWPA(_network)) {
         [self setEncryptionModel:@"WPA"];
-        dbg_str = [NSString stringWithFormat:@"setEncryptionModel: %s", "WPA"];
-        LOG_DBG(dbg_str);
+        //dbg_str = [NSString stringWithFormat:@"setEncryptionModel: %s", "WPA"];
+        //LOG_DBG(dbg_str);
     }
     else {
         [self setEncryptionModel:@"None"];
-        dbg_str = [NSString stringWithFormat:@"setEncryptionModel: %s", "None"];
-        LOG_DBG(dbg_str);
+        //dbg_str = [NSString stringWithFormat:@"setEncryptionModel: %s", "None"];
+        //LOG_DBG(dbg_str);
     }
     
     // BSSID
     NSString *BSSID = (NSString *)WiFiNetworkGetProperty(_network, CFSTR("BSSID"));
     [self setBSSID:BSSID];
-    dbg_str = [NSString stringWithFormat:@"setBSSID: %@", BSSID];
-    LOG_DBG(dbg_str);
+    //dbg_str = [NSString stringWithFormat:@"setBSSID: %@", BSSID];
+    //LOG_DBG(dbg_str);
 
     // Channel
     CFNumberRef networkChannel = (CFNumberRef)WiFiNetworkGetProperty(_network, CFSTR("CHANNEL"));
