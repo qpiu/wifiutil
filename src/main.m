@@ -19,6 +19,8 @@
 //static void scan_callback(WiFiDeviceClientRef device, CFArrayRef results, CFErrorRef error, void *token);
 //static void scan_networks();
 
+int getUsageType(NSString *usage);
+
 int main(int argc, char **argv, char **envp) {
     // insert code here...
     NSString *hello = @"Hello, wifiutil!";
@@ -38,124 +40,144 @@ int main(int argc, char **argv, char **envp) {
     NSString *usage = [NSString stringWithUTF8String:argv[1]];
     str = [NSString stringWithFormat:@"wifiutil: %@", usage];
     LOG_DBG(str);
-    
-    if ([usage isEqualToString:@"scan"])
+    int usageType = getUsageType(usage);
+    switch (usageType)   
     {
-        [[UtilNetworksManager sharedInstance] scan];
-    }
-    else if ([usage isEqualToString:@"associate"]) // associate to wifi: wifiutil associate <ssid> || wifiutil associate <ssid> -p <passwd>
-    {
-        // Argument parsing
-        if (argc < 3) {
-            LOG_ERR(@"Specify SSID to use wifiutil to associate.");
-            return -1;
-        }
-        NSString *conn_SSID = [NSString stringWithUTF8String:argv[2]];
-        NSString *passwd = nil;
-        if (argc > 3) { // associate with encrypted network
-            if (argc == 4) {
-                LOG_ERR(@"Invalid argument format.");
+        case 0: // scan
+            [[UtilNetworksManager sharedInstance] scan];
+            break;
+        case 1: // associate: wifiutil associate <ssid> || wifiutil associate <ssid> -p <passwd>
+            // Argument parsing
+            if (argc < 3) {
+                LOG_ERR(@"Specify SSID to use wifiutil to associate.");
                 return -1;
             }
-            if ( [[NSString stringWithUTF8String:argv[3]] isEqualToString:@"-p"] ) {
-                passwd = [NSString stringWithUTF8String:argv[4]];
-                str = [NSString stringWithFormat:@"Prepare to associate with network %@, passwd: %@", conn_SSID, passwd]; 
-                LOG_DBG(str);
-            }
-            else {
-                LOG_ERR(@"Invalid argument format.");
-                return -1;
-            }
-        }
-        else { // associate with open network
-            str = [NSString stringWithFormat:@"Prepare to associate with network %@", conn_SSID]; 
-            LOG_DBG(str);
-        }
-
-        // Scan networks first, and get the network instance with the specified SSID.
-        UtilNetworksManager *manager = [UtilNetworksManager sharedInstance];
-        [manager scan];
-
-        UtilNetwork *conn_Network = [manager getNetworkWithSSID: conn_SSID];
-        if (conn_Network)
-        {
-            str = [NSString stringWithFormat:@"Found network %@ :)", [conn_Network SSID]];
-            LOG_OUTPUT(str);
-            if ( [[conn_Network encryptionModel] isEqualToString:@"None"]) { // Open network
-                [manager associateWithNetwork: conn_Network];
-            }
-            else if ( ![[conn_Network encryptionModel] isEqualToString:@"None"]) { // Encrypted network 
-                if (!passwd)
-                {
-                    LOG_ERR(@"Specify PASSWORD to use associate with encrypted network.");
-                    [manager dealloc];
+            NSString *conn_SSID = [NSString stringWithUTF8String:argv[2]];
+            NSString *passwd = nil;
+            if (argc > 3) { // associate with encrypted network
+                if (argc == 4) {
+                    LOG_ERR(@"Invalid argument format.");
                     return -1;
                 }
-                [manager associateWithEncNetwork: conn_Network Password: passwd];
+                if ( [[NSString stringWithUTF8String:argv[3]] isEqualToString:@"-p"] ) {
+                    passwd = [NSString stringWithUTF8String:argv[4]];
+                    str = [NSString stringWithFormat:@"Prepare to associate with network %@, passwd: %@", conn_SSID, passwd]; 
+                    LOG_DBG(str);
+                }
+                else {
+                    LOG_ERR(@"Invalid argument format.");
+                    return -1;
+                }
+            }   
+            else { // associate with open network
+                str = [NSString stringWithFormat:@"Prepare to associate with network %@", conn_SSID]; 
+                LOG_DBG(str);
             }
-        }
-        else
-        {
-            str = [NSString stringWithFormat:@"Can not find network %@ :(", conn_SSID];
-            LOG_ERR(str);
-            [manager dealloc];
-            return -1;
-        }
 
-    }
-    else if ([usage isEqualToString:@"disassociate"]) // disassociate to wifi
-    {
-        UtilNetworksManager *manager = [UtilNetworksManager sharedInstance];
-        [manager disassociate];
-    }
-    else if ([usage isEqualToString:@"enable-wifi"])
-    {
-        UtilNetworksManager *manager = [UtilNetworksManager sharedInstance];
-        str = [NSString stringWithFormat:@"Enable WiFi on iPhone."]; 
-        LOG_DBG(str);
-        [manager setWiFiEnabled: YES];
-    }
-    else if ([usage isEqualToString:@"disable-wifi"])
-    {
-        UtilNetworksManager *manager = [UtilNetworksManager sharedInstance];
-        str = [NSString stringWithFormat:@"Disable WiFi on iPhone."]; 
-        LOG_DBG(str);
-        [manager setWiFiEnabled: NO];
-    }
-    else if ([usage isEqualToString:@"ping"])
-    {
-        if (argc < 3) {
+            // Scan networks first, and get the network instance with the specified SSID.
+            UtilNetworksManager *manager = [UtilNetworksManager sharedInstance];
+            [manager scan];
+
+            UtilNetwork *conn_Network = [manager getNetworkWithSSID: conn_SSID];
+            if (conn_Network)
+            {
+                str = [NSString stringWithFormat:@"Found network %@ :)", [conn_Network SSID]];
+                LOG_OUTPUT(str);
+                if ( [[conn_Network encryptionModel] isEqualToString:@"None"]) { // Open network
+                    [manager associateWithNetwork: conn_Network];
+                }
+                else if ( ![[conn_Network encryptionModel] isEqualToString:@"None"]) { // Encrypted network 
+                    if (!passwd)
+                    {
+                        LOG_ERR(@"Specify PASSWORD to use associate with encrypted network.");
+                        [manager dealloc];
+                        return -1;
+                    }
+                    [manager associateWithEncNetwork: conn_Network Password: passwd];
+                }
+            }
+            else
+            {
+                str = [NSString stringWithFormat:@"Can not find network %@ :(", conn_SSID];
+                LOG_ERR(str);
+                [manager dealloc];
+                return -1;
+            }
+            break;
+
+        case 2: // disassociate
+            [[UtilNetworksManager sharedInstance] disassociate];
+            break;
+
+        case 3: // enable-wifi
+            //UtilNetworksManager *manager = [UtilNetworksManager sharedInstance];
+            str = [NSString stringWithFormat:@"Enable WiFi on iPhone."]; 
+            LOG_DBG(str);
+            [[UtilNetworksManager sharedInstance] setWiFiEnabled: YES];
+            break;
+
+        case 4: // disable-wifi
+            //UtilNetworksManager *manager = [UtilNetworksManager sharedInstance];
+            str = [NSString stringWithFormat:@"Disable WiFi on iPhone."]; 
+            LOG_DBG(str);
+            [[UtilNetworksManager sharedInstance] setWiFiEnabled: NO];
+            break;
+
+        case 5: // ping
+            if (argc < 3) {
             LOG_ERR(@"Specify IP to use wifiutil to ping.\n");
             return -1;
-        }
-        NSString *ping_ip = [NSString stringWithUTF8String:argv[2]];
+            }
+            NSString *ping_ip = [NSString stringWithUTF8String:argv[2]];
 
-        // execute ping
-        //int pid = [[NSProcessInfo processInfo] processIdentifier];
-        NSPipe *pipe = [NSPipe pipe];
-        NSFileHandle *file = pipe.fileHandleForReading;
+            // execute ping
+            NSPipe *pipe = [NSPipe pipe];
+            NSFileHandle *file = pipe.fileHandleForReading;
 
-        NSTask *task = [[NSTask alloc] init];
-        task.launchPath = @"/usr/bin/ping";
-        task.arguments = @[@"-i", @"0.2", @"-c", @"50", ping_ip];
-        task.standardOutput = pipe;
-        [task launch];
+            NSTask *task = [[NSTask alloc] init];
+            task.launchPath = @"/usr/bin/ping";
+            task.arguments = @[@"-i", @"0.2", @"-c", @"50", ping_ip];
+            task.standardOutput = pipe;
+            [task launch];
 
-        NSData *data = [file readDataToEndOfFile];
-        [file closeFile];
-        NSString *output = [[NSString alloc] initWithData: data encoding: NSUTF8StringEncoding];
-        LOG_OUTPUT(output);
-        LOG_DBG(@"Ping Finished !");
+            NSData *data = [file readDataToEndOfFile];
+            [file closeFile];
+            NSString *output = [[NSString alloc] initWithData: data encoding: NSUTF8StringEncoding];
+            LOG_OUTPUT(output);
+            LOG_DBG(@"Ping Finished !");
+            break;
+
+        default:
+            LOG_ERR(@"Invalid usage >__< ");
+            break;
     }
-    else
-    {
-        str = [NSString stringWithFormat:@"Invalid argument: %@", usage];
-        LOG_ERR(str);
+
+    return 0;
+}
+
+int getUsageType(NSString *usage)
+{
+    if ([usage isEqualToString:@"scan"]) {
+        return 0;
+    }
+    else if ([usage isEqualToString:@"associate"]) {
+        return 1;
+    }
+    else if ([usage isEqualToString:@"disassociate"]) {
+        return 2;
+    }
+    else if ([usage isEqualToString:@"enable-wifi"]) {
+        return 3;
+    }
+    else if ([usage isEqualToString:@"disable-wifi"]) {
+        return 4;
+    }
+    else if ([usage isEqualToString:@"ping"]) {
+        return 5;
+    }
+    else {
         return -1;
     }
-
-    //[[UtilNetworksManager sharedInstance] dealloc];
-    return 0;
 }
 
 /*static void scan_networks()

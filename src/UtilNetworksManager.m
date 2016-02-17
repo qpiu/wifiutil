@@ -81,8 +81,10 @@ static UtilNetworksManager *_sharedInstance = nil;
 {
 	_statusCode = -1;
 	// If WiFi is off
-	if(![self isWiFiEnabled])
+	if(![self isWiFiEnabled]) {
 		[self setWiFiEnabled: YES];
+		[NSThread sleepForTimeInterval:5];
+	}
 
 	// Prevent initiating a scan when we're already scanning.
 	if (_scanning)
