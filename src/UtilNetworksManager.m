@@ -30,6 +30,7 @@ static UtilNetworksManager *_sharedInstance = nil;
 @implementation UtilNetworksManager
 @synthesize networks = _networks;
 @synthesize scanning = _scanning;
+@synthesize statusCode = _statusCode;
 
 + (id)sharedInstance
 {
@@ -78,6 +79,11 @@ static UtilNetworksManager *_sharedInstance = nil;
 
 - (void)scan
 {
+	_statusCode = -1;
+	// If WiFi is off
+	if(![self isWiFiEnabled])
+		[self setWiFiEnabled: YES];
+
 	// Prevent initiating a scan when we're already scanning.
 	if (_scanning)
 		return;
@@ -92,6 +98,7 @@ static UtilNetworksManager *_sharedInstance = nil;
 
 - (void)associateWithNetwork:(UtilNetwork *)network
 {
+	_statusCode = -1;
 	// Prevent initiating an association if we're already associating.
 	if (_associating) {
 		LOG_DBG(@"already associating...stop");
@@ -99,14 +106,8 @@ static UtilNetworksManager *_sharedInstance = nil;
 	}
 
 	if (_currentNetwork) {
-		// Prevent associating if we're already associated with that network.
-		//if ([[network BSSID] isEqualToString:(NSString *)WiFiNetworkGetProperty(_currentNetwork, CFSTR("BSSID"))]) {
-		//	return;
-		//} else {
-			// Disassociate with the current network before association.
-			LOG_DBG(@"Disassociate with the current network");
-			[self disassociate];
-		//}
+		LOG_DBG(@"Disassociate with the current network");
+		[self disassociate];
 	}
 
 	WiFiManagerClientScheduleWithRunLoop(_manager, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
@@ -115,36 +116,57 @@ static UtilNetworksManager *_sharedInstance = nil;
 	if(!net)
 		LOG_ERR(@"Cannot get networkRef");
 
-	/*if (net) {
-		// XXX: Figure out how Apple sets the username.
-		if ([network password])
-			WiFiNetworkSetPassword(net, (CFStringRef)[network password]);*/
+	[network setIsAssociating:YES];
+	_associating = YES;
+	LOG_DBG(@"Start associating");
+	WiFiDeviceClientAssociateAsync(_client, net, (WiFiDeviceAssociateCallback)UtilAssociationCallback, 0);
+	CFRunLoopRun();
+}
 
-		[network setIsAssociating:YES];
-		_associating = YES;
-		LOG_DBG(@"Start associating");
-		WiFiDeviceClientAssociateAsync(_client, net, (WiFiDeviceAssociateCallback)UtilAssociationCallback, 0);
-		CFRunLoopRun();
-	//}
+- (void)associateWithEncNetwork:(UtilNetwork *)network Password:(NSString *)passwd
+{
+	_statusCode = -1;
+	// Prevent initiating an association if we're already associating.
+	if (_associating) {
+		LOG_DBG(@"already associating...stop");
+		return;
+	}
+
+	if (_currentNetwork) {
+		// Disassociate with the current network before association.
+		LOG_DBG(@"Disassociate with the current network");
+		[self disassociate];
+	}
+
+	WiFiManagerClientScheduleWithRunLoop(_manager, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
+
+	WiFiNetworkRef net = [network _networkRef];
+	if(!net)
+		LOG_ERR(@"Cannot get networkRef");
+
+	WiFiNetworkSetPassword(net, (__bridge CFStringRef)passwd);
+
+	[network setIsAssociating:YES];
+	_associating = YES;
+	LOG_DBG(@"Start associating");
+	WiFiDeviceClientAssociateAsync(_client, net, (WiFiDeviceAssociateCallback)UtilAssociationCallback, 0);
+	CFRunLoopRun();
+
 }
 
 - (BOOL)isWiFiEnabled
 {
 	CFBooleanRef enabled = WiFiManagerClientCopyProperty(_manager, CFSTR("AllowEnable"));
-
 	BOOL value = CFBooleanGetValue(enabled);
-
 	CFRelease(enabled);
-
 	return value;
 }
 
 - (void)setWiFiEnabled:(BOOL)enabled
 {
-	// XXX: What.
 	CFBooleanRef value = (enabled ? kCFBooleanTrue : kCFBooleanFalse);
-
 	WiFiManagerClientSetProperty(_manager, CFSTR("AllowEnable"), value);
+	return;
 }
 
 - (void)disassociate
@@ -160,6 +182,19 @@ static UtilNetworksManager *_sharedInstance = nil;
 			return network; // network exists
 	}
 	return nil; // cannot find the network
+}
+
+- (NSString *)prettyPrintNetworks
+{
+	NSString *output = [[NSString alloc] init];
+	NSString *str = [[NSString alloc] init];
+
+	for(UtilNetwork *network in _networks)
+	{
+		str = [NSString stringWithFormat:@" %30s\t| %20s\t| %s %d\t", [[network SSID] UTF8String], [[network BSSID] UTF8String], "channel", [network channel]];
+		output = [NSString stringWithFormat:@"%@\n%@", output, str];
+	}
+	return output;
 }
 
 #pragma mark - Private APIs
@@ -200,6 +235,15 @@ static UtilNetworksManager *_sharedInstance = nil;
 - (void)_scanDidFinishWithError:(int)error
 {
 	WiFiManagerClientUnscheduleFromRunLoop(_manager);
+	NSString *str = [NSString stringWithFormat:@"Scanning finished code: %d", error];
+	LOG_DBG(str);
+	_statusCode = error;
+	if (_statusCode == 0) {
+		LOG_DBG(@"Scanning is successful :) ");
+	}
+	else if (_statusCode < 0) {
+		LOG_DBG(@"Scanning failed :( ");
+	}
 	_scanning = NO;
 }
 
@@ -211,9 +255,17 @@ static UtilNetworksManager *_sharedInstance = nil;
 		if ([network isAssociating])
 			[network setIsAssociating:NO];
 	}
+	NSString *str = [NSString stringWithFormat:@"Association finished code: %d", error];
+	LOG_DBG(str);
+	_statusCode = error;
+	if (_statusCode == 0) {
+		LOG_DBG(@"Association is successful :) ");
+	}
+	else if (_statusCode < 0) {
+		LOG_DBG(@"Association failed :( ");
+	}
 
 	_associating = NO;
-	LOG_DBG(@"Finished association !");
 	// Reload the current network.
 	[self _reloadCurrentNetwork];
 }
@@ -222,11 +274,11 @@ static UtilNetworksManager *_sharedInstance = nil;
 
 static void UtilScanCallback(WiFiDeviceClientRef device, CFArrayRef results, CFErrorRef error, void *token)
 {
-	NSString *str = [NSString stringWithFormat:@"Finished scanning! networks: %@", results];
-    LOG_OUTPUT(str);
+	//NSString *str = [NSString stringWithFormat:@"Finished scanning! %lu networks: %@", (unsigned long)[(__bridge NSArray *)results count], results];
+    //LOG_OUTPUT(str);
     CFRunLoopStop(CFRunLoopGetCurrent());
 
-	//[[UtilNetworksManager sharedInstance] _clearNetworks];
+	[[UtilNetworksManager sharedInstance] _clearNetworks];
 	for (unsigned x = 0; x < CFArrayGetCount(results); x++) {
 		WiFiNetworkRef networkRef = (WiFiNetworkRef)CFArrayGetValueAtIndex(results, x);
 
@@ -241,10 +293,24 @@ static void UtilScanCallback(WiFiDeviceClientRef device, CFArrayRef results, CFE
 				[network setIsCurrentNetwork:YES];
 		}
 
-		[[UtilNetworksManager sharedInstance] _addNetwork:network];
+		BOOL netExists = 0;
+		for (UtilNetwork *n in [[UtilNetworksManager sharedInstance] networks])
+		{	
+			if ( [[n BSSID] isEqualToString: [network BSSID]] ) {
+				netExists = 1;
+				NSString *str = [NSString stringWithFormat:@"(%@, %@) is already exists.", [network SSID], [network BSSID]];
+				LOG_DBG(str);
+				break; // network is already in _networks
+			}
+		}
+		if (!netExists)
+			[[UtilNetworksManager sharedInstance] _addNetwork: network];
 
 		[network release];
 	}
+	NSString *str = [NSString stringWithFormat:@"Finished scanning! %lu networks: %@", 
+		(unsigned long)[[[UtilNetworksManager sharedInstance] networks] count], [[UtilNetworksManager sharedInstance] prettyPrintNetworks]];
+    LOG_OUTPUT(str);
   	[[UtilNetworksManager sharedInstance] _scanDidFinishWithError:(int)error];
 }
 

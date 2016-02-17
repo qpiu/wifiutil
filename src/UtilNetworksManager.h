@@ -18,16 +18,19 @@
 	BOOL                _scanning;
 	BOOL                _associating;
 	NSMutableArray      *_networks;
+	int 				_statusCode;
 }
 
 @property(nonatomic, retain, readonly) NSArray *networks;
 @property(nonatomic, assign, readonly, getter = isScanning) BOOL scanning;
+@property(nonatomic, assign, readonly) int statusCode;
 @property(nonatomic, assign, getter = isWiFiEnabled) BOOL wiFiEnabled;
 
 + (id)sharedInstance;
 - (void)scan;
-//- (void)removeNetwork:(WiFiNetworkRef)network;
+//- (void)removeNetwork:(UtilNetwork *)network;
 - (void)associateWithNetwork:(UtilNetwork *)network;
+- (void)associateWithEncNetwork:(UtilNetwork *)network Password:(NSString *)passwd;
 - (void)disassociate;
 - (UtilNetwork *)getNetworkWithSSID:(NSString *)ssid;
 //- (NSArray *)knownNetworks;

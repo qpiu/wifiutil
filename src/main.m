@@ -21,49 +21,84 @@
 
 int main(int argc, char **argv, char **envp) {
     // insert code here...
-    NSString *hello = @"Hello, wifiutil!\n";
+    NSString *hello = @"Hello, wifiutil!";
     LOG_OUTPUT(hello);
-    NSString *str = [NSString stringWithFormat:@"argc = %d\n", argc];
+    NSString *str = [NSString stringWithFormat:@"argc = %d", argc];
     LOG_DBG(str);
     for (int i = 1; i < argc; i++) {
-        NSString *str = [NSString stringWithFormat:@"argv[%d] = %s\n", i, argv[i]];
+        NSString *str = [NSString stringWithFormat:@"argv[%d] = %s", i, argv[i]];
         LOG_DBG(str);
     }
     
     if (argc < 2) {
-        LOG_ERR(@"Specify arguments to use wifiutil.\n");
+        LOG_ERR(@"Specify arguments to use wifiutil.");
         return -1;
     }
 
     NSString *usage = [NSString stringWithUTF8String:argv[1]];
-    str = [NSString stringWithFormat:@"wifiutil: %@ \n", usage];
+    str = [NSString stringWithFormat:@"wifiutil: %@", usage];
     LOG_DBG(str);
     
     if ([usage isEqualToString:@"scan"])
     {
         [[UtilNetworksManager sharedInstance] scan];
     }
-    else if ([usage isEqualToString:@"associate"]) // associate to wifi
+    else if ([usage isEqualToString:@"associate"]) // associate to wifi: wifiutil associate <ssid> || wifiutil associate <ssid> -p <passwd>
     {
+        // Argument parsing
         if (argc < 3) {
-            LOG_ERR(@"Specify ssid to use wifiutil to associate.\n");
+            LOG_ERR(@"Specify SSID to use wifiutil to associate.");
             return -1;
         }
-        NSString *connect_SSID = [NSString stringWithUTF8String:argv[2]];
+        NSString *conn_SSID = [NSString stringWithUTF8String:argv[2]];
+        NSString *passwd = nil;
+        if (argc > 3) { // associate with encrypted network
+            if (argc == 4) {
+                LOG_ERR(@"Invalid argument format.");
+                return -1;
+            }
+            if ( [[NSString stringWithUTF8String:argv[3]] isEqualToString:@"-p"] ) {
+                passwd = [NSString stringWithUTF8String:argv[4]];
+                str = [NSString stringWithFormat:@"Prepare to associate with network %@, passwd: %@", conn_SSID, passwd]; 
+                LOG_DBG(str);
+            }
+            else {
+                LOG_ERR(@"Invalid argument format.");
+                return -1;
+            }
+        }
+        else { // associate with open network
+            str = [NSString stringWithFormat:@"Prepare to associate with network %@", conn_SSID]; 
+            LOG_DBG(str);
+        }
+
+        // Scan networks first, and get the network instance with the specified SSID.
         UtilNetworksManager *manager = [UtilNetworksManager sharedInstance];
         [manager scan];
-        UtilNetwork *conn_Network = [manager getNetworkWithSSID: connect_SSID];
-        if(conn_Network)
+
+        UtilNetwork *conn_Network = [manager getNetworkWithSSID: conn_SSID];
+        if (conn_Network)
         {
             str = [NSString stringWithFormat:@"Found network %@ :)", [conn_Network SSID]];
             LOG_OUTPUT(str);
-            [manager associateWithNetwork: conn_Network];
-
+            if ( [[conn_Network encryptionModel] isEqualToString:@"None"]) { // Open network
+                [manager associateWithNetwork: conn_Network];
+            }
+            else if ( ![[conn_Network encryptionModel] isEqualToString:@"None"]) { // Encrypted network 
+                if (!passwd)
+                {
+                    LOG_ERR(@"Specify PASSWORD to use associate with encrypted network.");
+                    [manager dealloc];
+                    return -1;
+                }
+                [manager associateWithEncNetwork: conn_Network Password: passwd];
+            }
         }
         else
         {
-            str = [NSString stringWithFormat:@"Can not find network %@ :(", connect_SSID];
+            str = [NSString stringWithFormat:@"Can not find network %@ :(", conn_SSID];
             LOG_ERR(str);
+            [manager dealloc];
             return -1;
         }
 
@@ -72,6 +107,20 @@ int main(int argc, char **argv, char **envp) {
     {
         UtilNetworksManager *manager = [UtilNetworksManager sharedInstance];
         [manager disassociate];
+    }
+    else if ([usage isEqualToString:@"enable-wifi"])
+    {
+        UtilNetworksManager *manager = [UtilNetworksManager sharedInstance];
+        str = [NSString stringWithFormat:@"Enable WiFi on iPhone."]; 
+        LOG_DBG(str);
+        [manager setWiFiEnabled: YES];
+    }
+    else if ([usage isEqualToString:@"disable-wifi"])
+    {
+        UtilNetworksManager *manager = [UtilNetworksManager sharedInstance];
+        str = [NSString stringWithFormat:@"Disable WiFi on iPhone."]; 
+        LOG_DBG(str);
+        [manager setWiFiEnabled: NO];
     }
     else if ([usage isEqualToString:@"ping"])
     {
@@ -104,6 +153,8 @@ int main(int argc, char **argv, char **envp) {
         LOG_ERR(str);
         return -1;
     }
+
+    //[[UtilNetworksManager sharedInstance] dealloc];
     return 0;
 }
 
