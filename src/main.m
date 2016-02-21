@@ -27,10 +27,10 @@ int main(int argc, char **argv, char **envp) {
     LOG_OUTPUT(hello);
     NSString *str = [NSString stringWithFormat:@"argc = %d", argc];
     LOG_DBG(str);
-    for (int i = 1; i < argc; i++) {
+    /*for (int i = 1; i < argc; i++) {
         NSString *str = [NSString stringWithFormat:@"argv[%d] = %s", i, argv[i]];
         LOG_DBG(str);
-    }
+    }*/
     
     if (argc < 2) {
         LOG_ERR(@"Specify arguments to use wifiutil.");
@@ -144,7 +144,7 @@ int main(int argc, char **argv, char **envp) {
             [file closeFile];
             NSString *output = [[NSString alloc] initWithData: data encoding: NSUTF8StringEncoding];
             LOG_OUTPUT(output);
-            LOG_DBG(@"Ping Finished !");
+            LOG_OUTPUT(@"Ping Finished !");
             break;
 
         default:

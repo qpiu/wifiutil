@@ -237,11 +237,11 @@ static UtilNetworksManager *_sharedInstance = nil;
 - (void)_scanDidFinishWithError:(int)error
 {
 	WiFiManagerClientUnscheduleFromRunLoop(_manager);
-	NSString *str = [NSString stringWithFormat:@"Scanning finished code: %d", error];
-	LOG_DBG(str);
+	//NSString *str = [NSString stringWithFormat:@"Scanning finished code: %d", error];
+	//LOG_DBG(str);
 	_statusCode = error;
 	if (_statusCode == 0) {
-		LOG_DBG(@"Scanning is successful :) ");
+		LOG_OUTPUT(@"Scanning is successful :) ");
 	}
 	else if (_statusCode < 0) {
 		LOG_DBG(@"Scanning failed :( ");
@@ -257,11 +257,11 @@ static UtilNetworksManager *_sharedInstance = nil;
 		if ([network isAssociating])
 			[network setIsAssociating:NO];
 	}
-	NSString *str = [NSString stringWithFormat:@"Association finished code: %d", error];
-	LOG_DBG(str);
+	//NSString *str = [NSString stringWithFormat:@"Association finished code: %d", error];
+	//LOG_DBG(str);
 	_statusCode = error;
 	if (_statusCode == 0) {
-		LOG_DBG(@"Association is successful :) ");
+		LOG_OUTPUT(@"Association is successful :) ");
 	}
 	else if (_statusCode < 0) {
 		LOG_DBG(@"Association failed :( ");
