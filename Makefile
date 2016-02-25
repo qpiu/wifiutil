@@ -5,6 +5,6 @@ wifiutil_FILES = $(wildcard src/*.m*)
 wifiutil_PRIVATE_FRAMEWORKS = MobileWiFi
 wifiutil_CODESIGN_FLAGS = -Ssrc/entitlements.xml
 
-ADDITIONAL_CFLAGS = -I$(THEOS_PROJECT_DIR)/ios-reversed-headers/
+ADDITIONAL_CFLAGS = -I$(THEOS_PROJECT_DIR)/headers/
 
 include $(THEOS_MAKE_PATH)/tool.mk

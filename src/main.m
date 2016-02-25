@@ -2,7 +2,7 @@
 //  main.c
 //  wifiutil
 //
-//  Created by lerlerblur on 2016/2/9.
+//  Created by qpiu on 2016/2/9.
 //  Copyright (c) 2016年 orangegogo. All rights reserved.
 //
 
@@ -20,10 +20,11 @@
 //static void scan_networks();
 
 int getUsageType(NSString *usage);
+void printUsage();
 
 int main(int argc, char **argv, char **envp) {
     // insert code here...
-    NSString *hello = @"Hello, wifiutil!";
+    NSString *hello = @"Hello, wifiutil! Type \x1B[32mwifiutil help \x1B[0mto see usage.";
     LOG_OUTPUT(hello);
     NSString *str = [NSString stringWithFormat:@"argc = %d", argc];
     LOG_DBG(str);
@@ -147,6 +148,10 @@ int main(int argc, char **argv, char **envp) {
             LOG_OUTPUT(@"Ping Finished !");
             break;
 
+        case 6: // help
+            printUsage();
+            break;
+
         default:
             LOG_ERR(@"Invalid usage >__< ");
             break;
@@ -175,9 +180,31 @@ int getUsageType(NSString *usage)
     else if ([usage isEqualToString:@"ping"]) {
         return 5;
     }
+    else if ([usage isEqualToString:@"help"]) {
+        return 6;
+    }
     else {
         return -1;
     }
+}
+
+void printUsage()
+{
+    NSString *usage = @"\n##########   WifiUtil Usage   ##########";
+    usage = [NSString stringWithFormat:@"%@\nScan available wifi hotspots:", usage];
+    usage = [NSString stringWithFormat:@"%@\n\t\t\x1B[36mwifiutil scan\x1B[0m", usage];
+    usage = [NSString stringWithFormat:@"%@\nEnable wifi on iPhone:", usage];
+    usage = [NSString stringWithFormat:@"%@\n\t\t\x1B[36mwifiutil enable-wifi\x1B[0m", usage];
+    usage = [NSString stringWithFormat:@"%@\nDisable wifi on iPhone:", usage];
+    usage = [NSString stringWithFormat:@"%@\n\t\t\x1B[36mwifiutil disable-wifi\x1B[0m", usage];
+    usage = [NSString stringWithFormat:@"%@\nAssociate to wifi:", usage];
+    usage = [NSString stringWithFormat:@"%@\n\t\t\x1B[36mwifiutil associate <ssid>  \x1B[0m--> For wifi networks without password\x1B[0m", usage];
+    usage = [NSString stringWithFormat:@"%@\n\t\t\x1B[36mwifiutil associate <ssid> -p <passwd> \x1B[0m--> For wifi networks with password\x1B[0m", usage];
+    usage = [NSString stringWithFormat:@"%@\nDisassociate with current wifi network:", usage];
+    usage = [NSString stringWithFormat:@"%@\n\t\t\x1B[36mwifiutil disassociate\x1B[0m", usage];
+    NSLog(@"%@", usage);
+
+    return;
 }
 
 /*static void scan_networks()
