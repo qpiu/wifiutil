@@ -27,7 +27,7 @@ int main(int argc, char **argv, char **envp) {
     NSString *hello = @"Hello, wifiutil! Type \x1B[32mwifiutil help \x1B[0mto see usage.";
     LOG_OUTPUT(hello);
     NSString *str = [NSString stringWithFormat:@"argc = %d", argc];
-    LOG_DBG(str);
+    //LOG_DBG(str);
     /*for (int i = 1; i < argc; i++) {
         NSString *str = [NSString stringWithFormat:@"argv[%d] = %s", i, argv[i]];
         LOG_DBG(str);
