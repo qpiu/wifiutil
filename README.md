@@ -22,10 +22,6 @@ iOS command-line tool for WiFi-related operation.
 <li>To disassociate with current wifi network: <code>wifiutil disassociate</code></li>
 </ul>
 
-# Sponsors
-No sponsors yet! Will you be the first? :)  <br>
-<span class="badge-paypal"><a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=X3KS6KJP63MG4" title="Donate to this project using Paypal"><img src="https://img.shields.io/badge/paypal-donate-yellow.svg" alt="PayPal donate button" /></a></span>
-
 # License
 Licensed under:
 <ul><li><a href="http://spdx.org/licenses/MIT.html">MIT License</a></li></ul>
