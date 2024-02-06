@@ -13,7 +13,7 @@
 #import "UtilNetwork.h"
 #import "UtilNetworksManager.h"
 #import "Constants.h"
-#include <String.h>
+#include <string.h>
 
 //static WiFiManagerRef _manager;
 //static void scan_callback(WiFiDeviceClientRef device, CFArrayRef results, CFErrorRef error, void *token);
