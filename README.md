@@ -23,6 +23,9 @@ iOS command-line tool for WiFi-related operation.
 <li>To ping an ip address: <code>wifiutil ping {ip}</code></li>
 </ul>
 
+# Note:
+Crapple doens't want you using NSTask.h and indeed it stops working in later versions of IOS (app sigining I think) so you'll need to get a copy of NSTask.h and drop it in hte `headers` dir.
+
 # License
 Licensed under:
 <ul><li><a href="http://spdx.org/licenses/MIT.html">MIT License</a></li></ul>

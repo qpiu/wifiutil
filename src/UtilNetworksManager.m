@@ -313,7 +313,7 @@ static void UtilScanCallback(WiFiDeviceClientRef device, CFArrayRef results, CFE
 	NSString *str = [NSString stringWithFormat:@"Finished scanning! %lu networks: %@", 
 		(unsigned long)[[[UtilNetworksManager sharedInstance] networks] count], [[UtilNetworksManager sharedInstance] prettyPrintNetworks]];
     LOG_OUTPUT(str);
-  	[[UtilNetworksManager sharedInstance] _scanDidFinishWithError:(int)error];
+  	[[UtilNetworksManager sharedInstance] _scanDidFinishWithError:(int64_t)error];
 }
 
 static void UtilAssociationCallback(WiFiDeviceClientRef device, WiFiNetworkRef networkRef, CFDictionaryRef dict, CFErrorRef error, void *token)
@@ -328,7 +328,7 @@ static void UtilAssociationCallback(WiFiDeviceClientRef device, WiFiNetworkRef n
 		}
 	}
 
-	[[UtilNetworksManager sharedInstance] _associationDidFinishWithError:(int)error];
+	[[UtilNetworksManager sharedInstance] _associationDidFinishWithError:(int64_t)error];
 
 }
 
